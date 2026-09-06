@@ -19,6 +19,7 @@ class PipelineStack(Stack):
         id: str,
         ecr_repository,
         test_app_fargate,
+        prod_app_fargate,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)
@@ -124,5 +125,20 @@ class PipelineStack(Stack):
                     service=test_app_fargate.service,
                     input=docker_build_output,
                 )
+            ],
+        )
+
+        pipeline.add_stage(
+            stage_name="Deploy-Production",
+            actions=[
+                codepipeline_actions.ManualApprovalAction(
+                    action_name="Approve-Deploy-Prod", run_order=1
+                ),
+                codepipeline_actions.EcsDeployAction(
+                    action_name="Deploy-Fargate-Prod",
+                    service=prod_app_fargate.service,
+                    input=docker_build_output,
+                    run_order=2,
+                ),
             ],
         )
